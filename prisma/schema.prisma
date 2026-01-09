@@ -8,28 +8,84 @@ datasource db {
 }
 
 model User {
-  id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  firstName   String
-  lastName    String
-  email       String     @unique
-  phone       String     @unique
-  photo       String?
-  role        UserRole
-  status      UserStatus @default(ACTIVE)
-  password    String
-  otp         String?
-  otpExpireAt DateTime?
-  isDeleted   Boolean    @default(false)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id                 String            @id @default(auto()) @map("_id") @db.ObjectId
+  name               String
+  email              String            @unique
+  phone              String            @unique
+  photo              String?
+  role               UserRole
+  roleBasedAccess    RoleBasedAccess[] @default([])
+  status             UserStatus        @default(ACTIVE)
+  needChangePassword Boolean           @default(true)
+  isDeleted          Boolean           @default(false)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  credential UserCredential?
 
   @@map("users")
 }
 
-model Post {
-  id          String @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  description String
+model UserCredential {
+  id     String @id @map("_id") @db.ObjectId
+  userId String @unique @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+
+  password    String
+  otp         String?
+  otpExpireAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_credentials")
+}
+
+model Category {
+  id             String         @id @map("_id") @db.ObjectId
+  name           String         @unique
+  status         CategoryStatus @default(ACTIVE)
+  approvalStatus ApprovalStatus @default(PENDING)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  subCategories  SubCategory[]
+
+  @@map("categories")
+}
+
+model SubCategory {
+  id             String         @id @map("_id") @db.ObjectId
+  name           String         @unique
+  status         CategoryStatus @default(ACTIVE)
+  approvalStatus ApprovalStatus @default(PENDING)
+
+  categoryId String   @db.ObjectId
+  category   Category @relation(fields: [categoryId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+
+  @@map("sub_categories")
+}
+model CodeSequence {
+  id          String   @id @map("_id") @db.ObjectId
+  prefix      String   @unique
+  nextNumber  Int      @default(1)
+  approvalStatus ApprovalStatus @default(PENDING)     
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("code_sequences")
+}
+model AuditLog {
+  id        String   @id @map("_id") @db.ObjectId
+  userId    String
+  action    String
+  entity    String
+  entityId  String
+  oldValue  Json?
+  newValue  Json?
+  createdAt DateTime @default(now())
 }
 
 enum UserRole {
@@ -40,4 +96,19 @@ enum UserRole {
 enum UserStatus {
   ACTIVE
   BLOCKED
+}
+
+enum RoleBasedAccess {
+  ALL
+}
+
+enum CategoryStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
