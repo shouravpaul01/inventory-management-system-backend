@@ -42,13 +42,14 @@ model UserCredential {
 }
 
 model Category {
-  id             String         @id @map("_id") @db.ObjectId
-  name           String         @unique
-  status         CategoryStatus @default(ACTIVE)
-  approvalStatus ApprovalStatus @default(PENDING)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id             String          @id @map("_id") @db.ObjectId
+  name           String          @unique
+  status         Status          @default(ACTIVE)
+  approvalStatus ApprovalStatus  @default(PENDING)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   subCategories  SubCategory[]
+  inventoryItems InventoryItem[]
 
   @@map("categories")
 }
@@ -56,27 +57,61 @@ model Category {
 model SubCategory {
   id             String         @id @map("_id") @db.ObjectId
   name           String         @unique
-  status         CategoryStatus @default(ACTIVE)
+  status         Status         @default(ACTIVE)
   approvalStatus ApprovalStatus @default(PENDING)
 
-  categoryId String   @db.ObjectId
-  category   Category @relation(fields: [categoryId], references: [id])
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
+  categoryId     String          @db.ObjectId
+  category       Category        @relation(fields: [categoryId], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  inventoryItems InventoryItem[]
 
   @@map("sub_categories")
 }
+
 model CodeSequence {
-  id          String   @id @map("_id") @db.ObjectId
-  prefix      String   @unique
-  nextNumber  Int      @default(1)
-  approvalStatus ApprovalStatus @default(PENDING)     
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String         @id @map("_id") @db.ObjectId
+  prefix         String         @unique
+  nextNumber     Int            @default(1)
+  approvalStatus ApprovalStatus @default(PENDING)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  inventoryItem  InventoryItem?
 
   @@map("code_sequences")
 }
+
+model InventoryItem {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  baseCodeId  String       @unique @db.ObjectId
+  baseCode    CodeSequence @relation(fields: [baseCodeId], references: [id])
+  name        String       @unique
+  description String?
+
+  // Category
+  categoryId    String      @db.ObjectId
+  subCategoryId String      @db.ObjectId
+  category      Category    @relation(fields: [categoryId], references: [id])
+  subCategory   SubCategory @relation(fields: [subCategoryId], references: [id])
+
+  // Stock Management
+  totalQuantity       Int @default(0)
+  availableQuantity   Int @default(0)
+  reservedQuantity    Int @default(0)
+  distributedQuantity Int @default(0)
+
+  // Specifications
+  specifications Json? // { brand: "", model: "", serial: "" }
+
+  status         Status         @default(ACTIVE)
+  approvalStatus ApprovalStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("inventory_items")
+}
+
 model AuditLog {
   id        String   @id @map("_id") @db.ObjectId
   userId    String
@@ -88,6 +123,7 @@ model AuditLog {
   createdAt DateTime @default(now())
 }
 
+// -----Enum------ //
 enum UserRole {
   USER
   ADMIN
@@ -102,7 +138,7 @@ enum RoleBasedAccess {
   ALL
 }
 
-enum CategoryStatus {
+enum Status {
   ACTIVE
   INACTIVE
 }
