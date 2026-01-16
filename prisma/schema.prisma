@@ -41,6 +41,24 @@ model UserCredential {
   @@map("user_credentials")
 }
 
+model Room {
+  id             String         @id @map("_id") @db.ObjectId
+  floor          String
+  roomNo         Int            @unique
+  type           String
+  images         String[]       @default([])
+  description    String?
+  specifications String?
+  status         Status         @default(ACTIVE)
+  approvalStatus ApprovalStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  stocks    Stock[]
+
+  @@map("rooms")
+}
+
 model Category {
   id             String          @id @map("_id") @db.ObjectId
   name           String          @unique
@@ -72,7 +90,7 @@ model SubCategory {
 model CodeSequence {
   id             String         @id @map("_id") @db.ObjectId
   prefix         String         @unique
-  nextNumber     Int            @default(1)
+  nextNumber     Int?
   approvalStatus ApprovalStatus @default(PENDING)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
@@ -82,34 +100,56 @@ model CodeSequence {
 }
 
 model InventoryItem {
-  id          String       @id @default(auto()) @map("_id") @db.ObjectId
-  baseCodeId  String       @unique @db.ObjectId
-  baseCode    CodeSequence @relation(fields: [baseCodeId], references: [id])
-  name        String       @unique
-  description String?
-
-  // Category
-  categoryId    String      @db.ObjectId
-  subCategoryId String      @db.ObjectId
-  category      Category    @relation(fields: [categoryId], references: [id])
-  subCategory   SubCategory @relation(fields: [subCategoryId], references: [id])
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  baseCodeId     String       @unique @db.ObjectId
+  baseCode       CodeSequence @relation(fields: [baseCodeId], references: [id])
+  name           String       @unique
+  description    String?
+  specifications String?
+  categoryId     String       @db.ObjectId
+  subCategoryId  String       @db.ObjectId
+  category       Category     @relation(fields: [categoryId], references: [id])
+  subCategory    SubCategory  @relation(fields: [subCategoryId], references: [id])
 
   // Stock Management
-  totalQuantity       Int @default(0)
+  totalQuantity Int @default(0)
+
   availableQuantity   Int @default(0)
-  reservedQuantity    Int @default(0)
   distributedQuantity Int @default(0)
 
-  // Specifications
-  specifications Json? // { brand: "", model: "", serial: "" }
+  totalCodes       String[] @default([])
+  availableCodes   String[] @default([])
+  distributedCodes String[] @default([])
 
   status         Status         @default(ACTIVE)
   approvalStatus ApprovalStatus @default(PENDING)
+  type           ItemType
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  stocks    Stock[]
+
+  @@map("inventory_items")
+}
+
+model Stock {
+  id              String         @id @map("_id") @db.ObjectId
+  inventoryItemId String         @db.ObjectId
+  inventortyItem  InventoryItem  @relation(fields: [inventoryItemId], references: [id])
+  quantity        Int
+  codes           String[]       @default([])
+  description     String?
+  specifications  String?
+  images          String[]       @default([])
+  storedId        String?        @db.ObjectId
+  store           Room?          @relation(fields: [storedId], references: [id])
+  status          Status         @default(ACTIVE)
+  approvalStatus  ApprovalStatus @default(PENDING)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("inventory_items")
+  @@map("stocks")
 }
 
 model AuditLog {
@@ -147,4 +187,10 @@ enum ApprovalStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum ItemType {
+  RETURNABLE
+  NONRETURNABLE
+  GIFT
 }
