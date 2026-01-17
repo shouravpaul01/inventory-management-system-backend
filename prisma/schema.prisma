@@ -21,7 +21,11 @@ model User {
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 
-  credential UserCredential?
+  credential     UserCredential?
+  allocatedItems AllocatedItem[]
+  orders         Order[]
+  actionLogs     ActionLog[]
+  notifications  Notification[]
 
   @@map("users")
 }
@@ -34,9 +38,6 @@ model UserCredential {
   password    String
   otp         String?
   otpExpireAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@map("user_credentials")
 }
@@ -52,20 +53,20 @@ model Room {
   status         Status         @default(ACTIVE)
   approvalStatus ApprovalStatus @default(PENDING)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  stocks    Stock[]
+  stocks          Stock[]
+  stores          Store[]
+  allocatedItems  AllocatedItem[]
+  deliveryDetails DeliveryDetails[]
 
   @@map("rooms")
 }
 
 model Category {
-  id             String          @id @map("_id") @db.ObjectId
-  name           String          @unique
-  status         Status          @default(ACTIVE)
-  approvalStatus ApprovalStatus  @default(PENDING)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id             String         @id @map("_id") @db.ObjectId
+  name           String         @unique
+  status         Status         @default(ACTIVE)
+  approvalStatus ApprovalStatus @default(PENDING)
+
   subCategories  SubCategory[]
   inventoryItems InventoryItem[]
 
@@ -92,9 +93,8 @@ model CodeSequence {
   prefix         String         @unique
   nextNumber     Int?
   approvalStatus ApprovalStatus @default(PENDING)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  inventoryItem  InventoryItem?
+
+  inventoryItem InventoryItem?
 
   @@map("code_sequences")
 }
@@ -125,42 +125,142 @@ model InventoryItem {
   approvalStatus ApprovalStatus @default(PENDING)
   type           ItemType
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  stocks    Stock[]
+  stocks Stock[]
+  stores Store[]
 
   @@map("inventory_items")
 }
 
 model Stock {
-  id              String         @id @map("_id") @db.ObjectId
-  inventoryItemId String         @db.ObjectId
-  inventortyItem  InventoryItem  @relation(fields: [inventoryItemId], references: [id])
+  id              String        @id @map("_id") @db.ObjectId
+  inventoryItemId String        @db.ObjectId
+  inventortyItem  InventoryItem @relation(fields: [inventoryItemId], references: [id])
   quantity        Int
-  codes           String[]       @default([])
+  codes           String[]      @default([])
   description     String?
   specifications  String?
-  images          String[]       @default([])
-  storedId        String?        @db.ObjectId
-  store           Room?          @relation(fields: [storedId], references: [id])
-  status          Status         @default(ACTIVE)
-  approvalStatus  ApprovalStatus @default(PENDING)
+  images          String[]      @default([])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status         Status         @default(ACTIVE)
+  approvalStatus ApprovalStatus @default(PENDING)
+
+  room   Room?   @relation(fields: [roomId], references: [id])
+  roomId String? @db.ObjectId
 
   @@map("stocks")
 }
 
-model AuditLog {
-  id        String   @id @map("_id") @db.ObjectId
-  userId    String
-  action    String
-  entity    String
-  entityId  String
-  oldValue  Json?
-  newValue  Json?
+model Store {
+  id                  String        @id @map("_id") @db.ObjectId
+  inventoryItemId     String        @db.ObjectId
+  inventortyItem      InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  quantity            Int
+  codes               String[]      @default([])
+  roomId              String?       @db.ObjectId
+  room                Room?         @relation(fields: [roomId], references: [id])
+  otherStoredLocation String?
+  images              String[]      @default([])
+  description         String?
+
+  @@map("stores")
+}
+
+model Order {
+  id               String    @id @map("_id") @db.ObjectId
+  userId           String    @db.ObjectId
+  user             User      @relation(fields: [userId], references: [id])
+  expectedDateTime DateTime
+  returnDeadline   DateTime?
+
+  status          OrderAndAllocatedItemsStatus @default(PENDING)
+  items           Item[]
+  deliveryDetails DeliveryDetails?
+
+  @@map("orders")
+}
+
+model DeliveryDetails {
+  id            String  @id @map("_id") @db.ObjectId
+  roomId        String? @db.ObjectId
+  room          Room?   @relation(fields: [roomId], references: [id])
+  orderLocation String?
+  orderId       String  @unique @db.ObjectId
+  order         Order   @relation(fields: [orderId], references: [id])
+
+  @@map("delivery_details")
+}
+
+model AllocatedItem {
+  id                  String             @id @map("_id") @db.ObjectId
+  type                AllocatedItemsType @default(REQUESTED)
+  userId              String             @db.ObjectId
+  user                User               @relation(fields: [userId], references: [id])
+  roomId              String?            @db.ObjectId
+  room                Room?              @relation(fields: [roomId], references: [id])
+  otherStoredLocation String?
+  descriptions        String?
+
+  status OrderAndAllocatedItemsStatus @default(PENDING)
+  items  Item[]
+
+  @@map("allocated_items")
+}
+
+model Item {
+  id              String         @id @map("_id") @db.ObjectId
+  quantity        Int
+  providedCodes   String[]       @default([])
+  allocatedItemId String?        @db.ObjectId
+  allocatedItem   AllocatedItem? @relation(fields: [allocatedItemId], references: [id])
+  orderId         String?        @db.ObjectId
+  order           Order?         @relation(fields: [orderId], references: [id])
+
+  @@map("items")
+}
+
+model ActionLog {
+  id String @id @map("_id") @db.ObjectId
+
+  // Who did the action
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+
+  // On which entity
+  entityType EntityType
+  entityId   String     @db.ObjectId
+
+  // What action
+  action ActionType
+  status ActionStatus?
+
+  // Optional context
+  description String?
+  meta        Json?
+
   createdAt DateTime @default(now())
+
+  @@map("action_logs")
+}
+
+model Notification {
+  id String @id @map("_id") @db.ObjectId
+
+  // Receiver
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+
+  title   String
+  message String
+
+  entityType EntityType?
+  entityId   String?     @db.ObjectId
+
+  type   NotificationType
+  isRead Boolean          @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
 }
 
 // -----Enum------ //
@@ -193,4 +293,58 @@ enum ItemType {
   RETURNABLE
   NONRETURNABLE
   GIFT
+}
+
+enum OrderAndAllocatedItemsStatus {
+  PENDING
+  APPROVED
+  DELIVERD
+  RECEIVED
+  RETURNED
+  RETURNED_RECEIVED
+}
+
+enum AllocatedItemsType {
+  REQUESTED
+  PROVIDED
+}
+
+enum EntityType {
+  USER
+  INVENTORY_ITEM
+  STOCK
+  STORE
+  ORDER
+  ALLOCATED_ITEM
+  DELIVERY_DETAILS
+  ROOM
+}
+
+enum ActionType {
+  CREATE
+  UPDATE
+  DELETE
+  REQUESTED
+  APPROVED
+  REJECTED
+  ALLOCATE
+  ISSUE
+  DELIVERED
+  RECEIVED
+  RETURNED
+  RETURNED_RECEIVED
+}
+
+enum ActionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum NotificationType {
+  INFO
+  ACTION
+  WARNING
+  SUCCESS
 }
