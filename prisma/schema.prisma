@@ -8,25 +8,30 @@ datasource db {
 }
 
 model User {
-  id                 String            @id @default(auto()) @map("_id") @db.ObjectId
-  name               String
-  email              String            @unique
-  phone              String            @unique
-  photo              String?
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  email       String  @unique
+  phone       String  @unique
+  photo       String?
+  designation String?
+  department  String  @default("Computer Science and Engineering")
+
   role               UserRole
-  roleBasedAccess    RoleBasedAccess[] @default([])
+  permissions        RoleBasedAccess[] @default([])
   status             UserStatus        @default(ACTIVE)
   needChangePassword Boolean           @default(true)
   isDeleted          Boolean           @default(false)
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  isEmailVerified    Boolean           @default(true)
 
-  credential     UserCredential?
-  allocatedItems AllocatedItem[]
-  orders         Order[]
-  actionLogs     ActionLog[]
-  notifications  Notification[]
+  credential       UserCredential?
+  allocations      Allocation[]
+  orders           Order[]
+  actionLogs       ActionLog[]
+  notifications    Notification[]
+  userCredentialId String          @db.ObjectId
 
+  @@index([role])
+  @@index([status])
   @@map("users")
 }
 
@@ -38,6 +43,8 @@ model UserCredential {
   password    String
   otp         String?
   otpExpireAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@map("user_credentials")
 }
@@ -53,17 +60,20 @@ model Room {
   status         Status         @default(ACTIVE)
   approvalStatus ApprovalStatus @default(PENDING)
 
-  stocks          Stock[]
-  stores          Store[]
-  allocatedItems  AllocatedItem[]
-  deliveryDetails DeliveryDetails[]
+  stocks        Stock[]
+  storages      Storage[]
+  allocations   Allocation[]
+  deliveryInfos DeliveryInfo[]
 
+  @@index([floor])
+  @@index([status])
   @@map("rooms")
 }
 
 model Category {
   id             String         @id @map("_id") @db.ObjectId
   name           String         @unique
+  description    String?
   status         Status         @default(ACTIVE)
   approvalStatus ApprovalStatus @default(PENDING)
 
@@ -76,19 +86,19 @@ model Category {
 model SubCategory {
   id             String         @id @map("_id") @db.ObjectId
   name           String         @unique
+  description    String?
   status         Status         @default(ACTIVE)
   approvalStatus ApprovalStatus @default(PENDING)
 
   categoryId     String          @db.ObjectId
   category       Category        @relation(fields: [categoryId], references: [id])
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
   inventoryItems InventoryItem[]
 
+  @@index([categoryId])
   @@map("sub_categories")
 }
 
-model CodeSequence {
+model ItemCodeSequence {
   id             String         @id @map("_id") @db.ObjectId
   prefix         String         @unique
   nextNumber     Int?
@@ -96,24 +106,24 @@ model CodeSequence {
 
   inventoryItem InventoryItem?
 
-  @@map("code_sequences")
+  @@map("item_code_sequences")
 }
 
 model InventoryItem {
-  id             String       @id @default(auto()) @map("_id") @db.ObjectId
-  baseCodeId     String       @unique @db.ObjectId
-  baseCode       CodeSequence @relation(fields: [baseCodeId], references: [id])
-  name           String       @unique
+  id         String           @id @default(auto()) @map("_id") @db.ObjectId
+  baseCodeId String           @unique @db.ObjectId
+  baseCode   ItemCodeSequence @relation(fields: [baseCodeId], references: [id])
+
+  name           String  @unique
   description    String?
   specifications String?
-  categoryId     String       @db.ObjectId
-  subCategoryId  String       @db.ObjectId
-  category       Category     @relation(fields: [categoryId], references: [id])
-  subCategory    SubCategory  @relation(fields: [subCategoryId], references: [id])
 
-  // Stock Management
-  totalQuantity Int @default(0)
+  categoryId    String      @db.ObjectId
+  subCategoryId String      @db.ObjectId
+  category      Category    @relation(fields: [categoryId], references: [id])
+  subCategory   SubCategory @relation(fields: [subCategoryId], references: [id])
 
+  totalQuantity       Int @default(0)
   availableQuantity   Int @default(0)
   distributedQuantity Int @default(0)
 
@@ -121,131 +131,150 @@ model InventoryItem {
   availableCodes   String[] @default([])
   distributedCodes String[] @default([])
 
+  type           ItemType
   status         Status         @default(ACTIVE)
   approvalStatus ApprovalStatus @default(PENDING)
-  type           ItemType
 
-  stocks Stock[]
-  stores Store[]
+  stocks   Stock[]
+  storages Storage[]
 
+  @@index([availableCodes])
+  @@index([distributedCodes])
+  @@index([totalCodes])
+  @@index([categoryId])
+  @@index([subCategoryId])
   @@map("inventory_items")
 }
 
 model Stock {
   id              String        @id @map("_id") @db.ObjectId
   inventoryItemId String        @db.ObjectId
-  inventortyItem  InventoryItem @relation(fields: [inventoryItemId], references: [id])
-  quantity        Int
-  codes           String[]      @default([])
-  description     String?
-  specifications  String?
-  images          String[]      @default([])
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  quantity       Int
+  codes          String[] @default([])
+  description    String?
+  specifications String?
+  images         String[] @default([])
+
+  roomId String? @db.ObjectId
+  room   Room?   @relation(fields: [roomId], references: [id])
 
   status         Status         @default(ACTIVE)
   approvalStatus ApprovalStatus @default(PENDING)
 
-  room   Room?   @relation(fields: [roomId], references: [id])
-  roomId String? @db.ObjectId
-
+  @@index([inventoryItemId])
+  @@index([roomId])
+  @@index([codes])
   @@map("stocks")
 }
 
-model Store {
-  id                  String        @id @map("_id") @db.ObjectId
-  inventoryItemId     String        @db.ObjectId
-  inventortyItem      InventoryItem @relation(fields: [inventoryItemId], references: [id])
-  quantity            Int
-  codes               String[]      @default([])
-  roomId              String?       @db.ObjectId
-  room                Room?         @relation(fields: [roomId], references: [id])
-  otherStoredLocation String?
-  images              String[]      @default([])
-  description         String?
+model Storage {
+  id              String        @id @map("_id") @db.ObjectId
+  inventoryItemId String        @db.ObjectId
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
 
-  @@map("stores")
+  quantity      Int
+  codes         String[] @default([])
+  roomId        String?  @db.ObjectId
+  room          Room?    @relation(fields: [roomId], references: [id])
+  otherLocation String?
+
+  images      String[] @default([])
+  description String?
+
+  @@index([inventoryItemId])
+  @@index([roomId])
+  @@index([codes])
+  @@map("storages")
 }
 
 model Order {
-  id               String    @id @map("_id") @db.ObjectId
-  userId           String    @db.ObjectId
-  user             User      @relation(fields: [userId], references: [id])
+  id     String @id @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+
   expectedDateTime DateTime
   returnDeadline   DateTime?
 
-  status          OrderAndAllocatedItemsStatus @default(PENDING)
-  items           Item[]
-  deliveryDetails DeliveryDetails?
+  status       OrderAndAllocationStatus @default(PENDING)
+  items        OrderItem[]
+  deliveryInfo DeliveryInfo?
 
   @@map("orders")
 }
 
-model DeliveryDetails {
+model DeliveryInfo {
   id            String  @id @map("_id") @db.ObjectId
   roomId        String? @db.ObjectId
   room          Room?   @relation(fields: [roomId], references: [id])
   orderLocation String?
-  orderId       String  @unique @db.ObjectId
-  order         Order   @relation(fields: [orderId], references: [id])
 
-  @@map("delivery_details")
+  orderId String @unique @db.ObjectId
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  @@map("delivery_infos")
 }
 
-model AllocatedItem {
-  id                  String             @id @map("_id") @db.ObjectId
-  type                AllocatedItemsType @default(REQUESTED)
-  userId              String             @db.ObjectId
-  user                User               @relation(fields: [userId], references: [id])
-  roomId              String?            @db.ObjectId
-  room                Room?              @relation(fields: [roomId], references: [id])
+model Allocation {
+  id   String         @id @map("_id") @db.ObjectId
+  type AllocationType @default(REQUESTED)
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+
+  roomId              String? @db.ObjectId
+  room                Room?   @relation(fields: [roomId], references: [id])
   otherStoredLocation String?
-  descriptions        String?
+  description         String?
 
-  status OrderAndAllocatedItemsStatus @default(PENDING)
-  items  Item[]
+  status OrderAndAllocationStatus @default(PENDING)
+  items  OrderItem[]
 
-  @@map("allocated_items")
+  @@index([userId])
+  @@index([status])
+  @@map("allocations")
 }
 
-model Item {
-  id              String         @id @map("_id") @db.ObjectId
-  quantity        Int
-  providedCodes   String[]       @default([])
-  allocatedItemId String?        @db.ObjectId
-  allocatedItem   AllocatedItem? @relation(fields: [allocatedItemId], references: [id])
-  orderId         String?        @db.ObjectId
-  order           Order?         @relation(fields: [orderId], references: [id])
+model OrderItem {
+  id            String   @id @map("_id") @db.ObjectId
+  quantity      Int
+  providedCodes String[] @default([])
 
-  @@map("items")
+  allocationId String?
+  allocation   Allocation? @relation(fields: [allocationId], references: [id])
+
+  orderId String?
+  order   Order?  @relation(fields: [orderId], references: [id])
+
+  @@map("order_items")
 }
 
 model ActionLog {
   id String @id @map("_id") @db.ObjectId
-
-  // Who did the action
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
 
-  // On which entity
   entityType EntityType
   entityId   String     @db.ObjectId
 
-  // What action
   action ActionType
   status ActionStatus?
 
-  // Optional context
   description String?
   meta        Json?
 
   createdAt DateTime @default(now())
 
+  @@index([userId])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
   @@map("action_logs")
 }
 
 model Notification {
   id String @id @map("_id") @db.ObjectId
-
-  // Receiver
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
 
@@ -260,13 +289,17 @@ model Notification {
 
   createdAt DateTime @default(now())
 
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
   @@map("notifications")
 }
 
-// -----Enum------ //
 enum UserRole {
-  USER
+  SUPER_ADMIN
   ADMIN
+  TEACHER
+  STAFF
 }
 
 enum UserStatus {
@@ -295,16 +328,16 @@ enum ItemType {
   GIFT
 }
 
-enum OrderAndAllocatedItemsStatus {
+enum OrderAndAllocationStatus {
   PENDING
   APPROVED
-  DELIVERD
+  DELIVERED
   RECEIVED
   RETURNED
   RETURNED_RECEIVED
 }
 
-enum AllocatedItemsType {
+enum AllocationType {
   REQUESTED
   PROVIDED
 }
@@ -313,10 +346,10 @@ enum EntityType {
   USER
   INVENTORY_ITEM
   STOCK
-  STORE
+  STORAGE
   ORDER
-  ALLOCATED_ITEM
-  DELIVERY_DETAILS
+  ALLOCATION
+  DELIVERY_INFO
   ROOM
 }
 
@@ -333,6 +366,7 @@ enum ActionType {
   RECEIVED
   RETURNED
   RETURNED_RECEIVED
+  PASSWORD_CHANGED
 }
 
 enum ActionStatus {
