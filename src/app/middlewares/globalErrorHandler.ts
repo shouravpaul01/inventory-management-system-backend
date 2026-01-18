@@ -10,12 +10,13 @@ import parsePrismaValidationError from "../../errors/parsePrismaValidationError"
 import { IGenericErrorMessage } from "../../interfaces/error";
 import config from "../../config";
 import { TokenExpiredError } from "jsonwebtoken";
+import ApiPathError from "../../errors/ApiPathError";
 
 const GlobalErrorHandler = (
   error: any,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   let statusCode: any = httpStatus.INTERNAL_SERVER_ERROR;
   let message = error.message || "Something went wrong!";
@@ -79,7 +80,19 @@ const GlobalErrorHandler = (
         ]
       : [];
   }
-
+  // Handle Custom ApiError with path
+  else if (error instanceof ApiPathError) {
+    statusCode = error?.statusCode;
+    message = "Validation Error";
+    errorMessages = error?.message
+      ? [
+          {
+            path: error.path,
+            message: error?.message,
+          },
+        ]
+      : [];
+  }
   // Handle Errors
   else if (error instanceof Error) {
     message = error?.message;
