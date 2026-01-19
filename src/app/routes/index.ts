@@ -2,10 +2,9 @@ import express from "express";
 
 import { AuthRoutes } from "../modules/Auth/auth.routes";
 import { UserRoutes } from "../modules/User/user.route";
-import { ImageRoutes } from "../modules/Image/Image.route";
-import { PostRoutes } from "../modules/Post/Post.route";
 
-// import { paymentRoutes } from "../modules/Payment/payment.route";
+import { CategoryRoute } from "../modules/Category/category.route";
+import { SubCategoriesRoute } from "../modules/SubCategory/subCategory.route";
 
 const router = express.Router();
 
@@ -20,8 +19,12 @@ const moduleRoutes = [
   },
 
   {
-    path: "/files",
-    route: ImageRoutes,
+    path: "/categories",
+    route: CategoryRoute,
+  },
+   {
+    path: "/sub-categories",
+    route: SubCategoriesRoute,
   },
 ];
 

@@ -4,14 +4,13 @@ import { User, UserRole, UserStatus } from "@prisma/client";
 
 export const initiateSuperAdmin = async () => {
   const payload = {
-    firstName: "Admin" as string,
-    lastName: "Application",
-    email: "admin@gmail.com" as string,
+    name: "Super admin" as string,
+    email: "superadmin@gmail.com" as string,
     phone: "1234567890" as string,
-    role: UserRole.ADMIN,
-    password: await bcrypt.hash("12345678", 10),
+    role: UserRole.SUPER_ADMIN,
+    isEmailVerified: true,
   };
-
+  const hashPassword = (await bcrypt.hash("12345678", 10)) as string;
   const existAdmin = await prisma.user.findUnique({
     where: { email: payload.email },
   });
@@ -19,5 +18,7 @@ export const initiateSuperAdmin = async () => {
     return;
   }
 
-  await prisma.user.create({ data: payload });
+  await prisma.user.create({
+    data: { ...payload, credential: { create: { password: hashPassword } } },
+  });
 };

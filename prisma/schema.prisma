@@ -28,7 +28,7 @@ model User {
   orders           Order[]
   actionLogs       ActionLog[]
   notifications    Notification[]
-  userCredentialId String          @db.ObjectId
+ 
 
   @@index([role])
   @@index([status])
@@ -36,7 +36,7 @@ model User {
 }
 
 model UserCredential {
-  id     String @id @map("_id") @db.ObjectId
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
   userId String @unique @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
 
@@ -50,7 +50,7 @@ model UserCredential {
 }
 
 model Room {
-  id             String         @id @map("_id") @db.ObjectId
+  id             String         @id @default(auto()) @map("_id")  @db.ObjectId
   floor          String
   roomNo         Int            @unique
   type           String
@@ -71,7 +71,7 @@ model Room {
 }
 
 model Category {
-  id             String         @id @map("_id") @db.ObjectId
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
   name           String         @unique
   description    String?
   status         Status         @default(ACTIVE)
@@ -84,7 +84,7 @@ model Category {
 }
 
 model SubCategory {
-  id             String         @id @map("_id") @db.ObjectId
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
   name           String         @unique
   description    String?
   status         Status         @default(ACTIVE)
@@ -99,7 +99,7 @@ model SubCategory {
 }
 
 model ItemCodeSequence {
-  id             String         @id @map("_id") @db.ObjectId
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
   prefix         String         @unique
   nextNumber     Int?
   approvalStatus ApprovalStatus @default(PENDING)
@@ -147,7 +147,7 @@ model InventoryItem {
 }
 
 model Stock {
-  id              String        @id @map("_id") @db.ObjectId
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
   inventoryItemId String        @db.ObjectId
   inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
 
@@ -170,7 +170,7 @@ model Stock {
 }
 
 model Storage {
-  id              String        @id @map("_id") @db.ObjectId
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
   inventoryItemId String        @db.ObjectId
   inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
 
@@ -190,7 +190,7 @@ model Storage {
 }
 
 model Order {
-  id     String @id @map("_id") @db.ObjectId
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
 
@@ -205,7 +205,7 @@ model Order {
 }
 
 model DeliveryInfo {
-  id            String  @id @map("_id") @db.ObjectId
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
   roomId        String? @db.ObjectId
   room          Room?   @relation(fields: [roomId], references: [id])
   orderLocation String?
@@ -217,7 +217,7 @@ model DeliveryInfo {
 }
 
 model Allocation {
-  id   String         @id @map("_id") @db.ObjectId
+  id   String         @id @default(auto()) @map("_id") @db.ObjectId
   type AllocationType @default(REQUESTED)
 
   userId String @db.ObjectId
@@ -237,7 +237,7 @@ model Allocation {
 }
 
 model OrderItem {
-  id            String   @id @map("_id") @db.ObjectId
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
   quantity      Int
   providedCodes String[] @default([])
 
@@ -251,7 +251,7 @@ model OrderItem {
 }
 
 model ActionLog {
-  id String @id @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
 
@@ -274,7 +274,7 @@ model ActionLog {
 }
 
 model Notification {
-  id String @id @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
 
@@ -344,6 +344,8 @@ enum AllocationType {
 
 enum EntityType {
   USER
+  CATEGORY
+  SUBCATEGORY
   INVENTORY_ITEM
   STOCK
   STORAGE

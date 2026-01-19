@@ -1,11 +1,12 @@
-import { Category } from "@prisma/client";
+import { ApprovalStatus, Category, Status } from "@prisma/client";
 import prisma from "../../../shared/prisma";
 import ApiPathError from "../../../errors/ApiPathError";
 import httpStatus from "http-status";
 import QueryBuilder from "../../../helpers/queryBuilder";
 import ApiError from "../../../errors/ApiErrors";
+import { createActionLogDB } from "../../../utils/createActionLogDB";
 
-const createCategoryDB = async (user: any, payload: Category) => {
+const createCategoryDB = async (userId: any, payload: Category) => {
   const existingName = await prisma.category.findUnique({
     where: { name: payload.name },
   });
@@ -18,6 +19,7 @@ const createCategoryDB = async (user: any, payload: Category) => {
   }
 
   const result = await prisma.category.create({ data: payload });
+  await createActionLogDB({userId,action:"CREATE",entityType:"CATEGORY",entityId:result.id})
   return result;
 };
 const getAllCategoriesDB = async (query: Record<string, undefined>) => {
@@ -39,7 +41,7 @@ const getSingleCategoryDB = async (id: string) => {
   return existingCategory;
 };
 const updateCategoryDB = async (
-  user: any,
+  userId: string,
   categoryId: string,
   payload: Partial<Category>,
 ) => {
@@ -53,11 +55,49 @@ const updateCategoryDB = async (
     where: { id: categoryId },
     data: payload,
   });
+  await createActionLogDB({userId,action:"UPDATE",entityType:"CATEGORY",entityId:result.id})
   return result;
 };
+const statusUpdateDB = async (
+  userId: string,
+  categoryId: string,
+  status: Status | ApprovalStatus,
+) => {
+  const allowedStatuses = [
+    Status.ACTIVE,
+    Status.INACTIVE,
+    ApprovalStatus.APPROVED,
+  ];
+
+  if (!allowedStatuses.includes(status as Status)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status.");
+  }
+
+  let result;
+
+  if (status === Status.ACTIVE || status === Status.INACTIVE) {
+    result = await prisma.category.update({
+      where: { id: categoryId },
+      data: { status },
+    });
+    await createActionLogDB({userId,action:"UPDATE",entityType:"CATEGORY",entityId:result.id})
+  }
+
+  if (status === ApprovalStatus.APPROVED) {
+    result = await prisma.category.update({
+      where: { id: categoryId },
+      data: { approvalStatus: status },
+    });
+    await createActionLogDB({userId,action:"APPROVED",entityType:"CATEGORY",entityId:result.id})
+  }
+
+  return result;
+};
+
 export const CategoryServices = {
   createCategoryDB,
   getAllCategoriesDB,
   getSingleCategoryDB,
-  updateCategoryDB
+  updateCategoryDB,
+  statusUpdateDB
 };
