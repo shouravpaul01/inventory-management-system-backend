@@ -126,4 +126,5 @@ export const SubCategoryServices = {
   getSingleSubCategoryDB,
   updateSubCategoryDB,
   statusUpdateDB,
+  
 };
