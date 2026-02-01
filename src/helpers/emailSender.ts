@@ -14,7 +14,7 @@ const emailSender = async (subject: string, email: string, html: string) => {
   const emailTransport = transporter;
 
   const mailOptions = {
-    from: `"CORVERA" <${config.emailSender.email}>`,
+    from: `<${config.emailSender.email}>`,
     to: email,
     subject,
     html,
@@ -48,7 +48,7 @@ export const emailSenderForContact = async (
   const emailTransport = transporter;
 
   const mailOptions = {
-    from: `"CORVERA" <${email}>`,
+    from: `<${email}>`,
     to: config.emailSender.email,
     subject,
     html,

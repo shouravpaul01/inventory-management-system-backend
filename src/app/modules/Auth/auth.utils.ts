@@ -1,3 +1,133 @@
+import config from "../../../config";
+import { TOtpEmailParams, TResetPasswordEmailParams } from "./auth.interface";
+
+
+ function otpEmailTemplate({
+  otp,
+  expiryMinutes,
+  appName = config.app_name!,
+  supportEmail = config.support_email,
+}: TOtpEmailParams) {
+  return {
+    subject: `Your OTP Code for ${appName}`,
+
+    text: `
+Your One-Time Password (OTP) is: ${otp}
+
+This code will expire in ${expiryMinutes} minutes.
+Do not share this OTP with anyone.
+
+If you did not request this, please ignore this email.
+
+— ${appName} Team
+Support: ${supportEmail}
+    `,
+
+    html: `
+      <div style="font-family: Arial, sans-serif; background:#f9fafb; padding:24px;">
+        <div style="max-width:520px; margin:auto; background:#ffffff; padding:24px; border-radius:8px;">
+          <h2 style="color:#111827; margin-bottom:12px;">Verify your email</h2>
+
+          <p style="color:#374151; font-size:14px;">
+            Use the following One-Time Password (OTP) to complete your verification:
+          </p>
+
+          <div style="
+            font-size:28px;
+            font-weight:700;
+            letter-spacing:6px;
+            text-align:center;
+            margin:20px 0;
+            color:#111827;
+          ">
+            ${otp}
+          </div>
+
+          <p style="color:#374151; font-size:14px;">
+            This OTP is valid for <strong>${expiryMinutes} minutes</strong>.
+            Please do not share this code with anyone.
+          </p>
+
+          <p style="color:#6b7280; font-size:13px; margin-top:20px;">
+            If you did not request this verification, you can safely ignore this email.
+          </p>
+
+          <hr style="margin:24px 0; border:none; border-top:1px solid #e5e7eb;" />
+
+          <p style="color:#6b7280; font-size:12px;">
+            © ${new Date().getFullYear()} ${appName}. All rights reserved.<br/>
+            Support: ${supportEmail}
+          </p>
+        </div>
+      </div>
+    `,
+  };
+}
+
+
+export function resetPasswordEmailTemplate({
+  resetLink,
+  expiryMinutes,
+  appName = config.app_name!,
+  supportEmail = config.support_email,
+}: TResetPasswordEmailParams) {
+  return {
+    subject: `Reset Your Password for ${appName}`,
+
+    text: `
+You requested to reset your password.
+
+Click the link below to reset your password:
+${resetLink}
+
+This link will expire in ${expiryMinutes} minutes.
+If you did not request a password reset, please ignore this email.
+
+— ${appName} Team
+Support: ${supportEmail}
+    `,
+
+    html: `
+      <div style="font-family: Arial, sans-serif; background:#f9fafb; padding:24px;">
+        <div style="max-width:520px; margin:auto; background:#ffffff; padding:24px; border-radius:8px;">
+          <h2 style="color:#111827; margin-bottom:12px;">Reset Your Password</h2>
+
+          <p style="color:#374151; font-size:14px;">
+            We received a request to reset your password. Click the button below to proceed:
+          </p>
+
+          <div style="text-align:center; margin:24px 0;">
+            <a href="${resetLink}" 
+               style="
+                 display:inline-block;
+                 padding:12px 24px;
+                 background-color:#2563eb;
+                 color:#ffffff;
+                 font-weight:600;
+                 border-radius:6px;
+                 text-decoration:none;
+                 font-size:14px;
+               ">
+              Reset Password
+            </a>
+          </div>
+
+          <p style="color:#374151; font-size:14px;">
+            This link will expire in <strong>${expiryMinutes} minutes</strong>.
+            If you did not request this reset, please ignore this email.
+          </p>
+
+          <hr style="margin:24px 0; border:none; border-top:1px solid #e5e7eb;" />
+
+          <p style="color:#6b7280; font-size:12px;">
+            © ${new Date().getFullYear()} ${appName}. All rights reserved.<br/>
+            Support: ${supportEmail}
+          </p>
+        </div>
+      </div>
+    `,
+  };
+}
 const createForgotPasswordTemplate = async (resetLink: string) => {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -104,4 +234,4 @@ const createForgotPasswordTemplate = async (resetLink: string) => {
 </html>`;
 };
 
-export const AuthUtils = { createForgotPasswordTemplate };
+export const AuthUtils = {otpEmailTemplate,resetPasswordEmailTemplate, createForgotPasswordTemplate };

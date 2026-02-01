@@ -6,7 +6,7 @@ import path from "path";
 import bodyParser from "body-parser";
 import router from "./app/routes";
 import GlobalErrorHandler from "./app/middlewares/globalErrorHandler";
-import { AppBodyTemplate } from "./utils/BodyTemplate";
+import { AppBodyTemplate } from "./utils/templates";
 import morgan from "morgan";
 import { rateLimit } from 'express-rate-limit'
 

@@ -1,3 +1,5 @@
+import config from "../config";
+
 // Update your TemplateConfig interface
 export interface TemplateConfig {
   message?: string;
@@ -155,3 +157,4 @@ export const AppBodyTemplate = (config: TemplateConfig = {}) => {
       </html>
     `;
 };
+

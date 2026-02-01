@@ -8,7 +8,7 @@ import { AuthServices } from "./auth.service";
 const loginUser = catchAsync(async (req: Request, res: Response) => {
   const result = await AuthServices.loginUser(req.body);
 
-  if (result.refreshToken) {
+  if (result?.refreshToken) {
     // Set refresh token in cookies for verified users
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
@@ -21,19 +21,16 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
     statusCode: httpStatus.OK,
     success: true,
     message: result.message,
-    data: result.accessToken ? { accessToken: result.accessToken } : {},
+    data: result?.data?result.data:result.accessToken ? { accessToken: result.accessToken } : {},
   });
 });
 
 // change password
 const changePassword = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.user.id;
-  const { oldPassword, newPassword } = req.body;
 
   const result = await AuthServices.changePassword(
-    userId,
-    newPassword,
-    oldPassword
+    req.user.id,
+   req.body
   );
   sendResponse(res, {
     success: true,
@@ -65,21 +62,12 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
     data: null,
   });
 });
-const signup = catchAsync(async (req: Request, res: Response) => {
-  const result = await AuthServices.signup(req.body);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Signup success",
-    data: result,
-  });
-});
 
 export const AuthControllers = {
   loginUser,
   changePassword,
   forgotPassword,
   resetPassword,
-  signup,
+  
 };
