@@ -20,6 +20,7 @@ export default {
     otp_expiry_minutes:process.env.OTP_EXPIRY_MINUTES
   },
   reset_pass_link: process.env.RESET_PASS_LINK,
+  login_link:process.env.LOGIN_LINK,
   emailSender: {
     email: process.env.EMAIL,
     app_pass: process.env.APP_PASS,

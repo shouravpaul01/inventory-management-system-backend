@@ -26,18 +26,17 @@ const resetPasswordSChema = z.object({
   }),
 });
 
-const SignupValidation = z.object({
+const registerSchema = z.object({
   body: z.object({
-    firstName: z.string(),
-    lastName: z.string(),
-    email: z.string().email({
+    name: z.string().trim().nonempty("The field is required."),
+   
+    email: z.string().nonempty("The field is required.").email({
       message: "Valid email is required.",
     }),
-    phone: z.string().min(5),
-    hospitalId: z.string(),
-    role: z.enum(Object.values(UserRole) as [string, ...string[]]),
-    password: z.string().min(6, {
-      message: "Password must be at least 6 characters long.",
+    phone: z.string().nonempty("The field is required.").min(5),
+    
+    password: z.string().nonempty("The field is required.").min(6, {
+      message: "Password must be at least 8 characters long.",
     }),
   }),
 });
@@ -47,5 +46,5 @@ export const AuthValidations = {
   loginValidationSchema,
   resetPasswordSChema,
   forgotPasswordSchema,
-  SignupValidation,
+  registerSchema,
 };

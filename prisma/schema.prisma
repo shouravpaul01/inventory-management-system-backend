@@ -8,27 +8,27 @@ datasource db {
 }
 
 model User {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  email       String  @unique
-  phone       String  @unique
-  photo       String?
-  designation String?
-  department  String  @default("Computer Science and Engineering")
+  id             String  @id @default(auto()) @map("_id") @db.ObjectId
+  registrationId String  @unique
+  name           String
+  email          String  @unique
+  phone          String  @unique
+  photo          String?
+  designation    String?
+  department     String  @default("Computer Science and Engineering")
 
-  role               UserRole
+  role               UserRole @default(TEACHER)
   permissions        RoleBasedAccess[] @default([])
   status             UserStatus        @default(ACTIVE)
   needChangePassword Boolean           @default(true)
   isDeleted          Boolean           @default(false)
   isEmailVerified    Boolean           @default(true)
 
-  credential       UserCredential?
-  allocations      Allocation[]
-  orders           Order[]
-  actionLogs       ActionLog[]
-  notifications    Notification[]
- 
+  credential    UserCredential?
+  allocations   Allocation[]
+  orders        Order[]
+  actionLogs    ActionLog[]
+  notifications Notification[]
 
   @@index([role])
   @@index([status])
@@ -40,18 +40,18 @@ model UserCredential {
   userId String @unique @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
 
-  password    String
-  otp         String?
-  otpExpireAt DateTime?
+  password     String
+  otp          String?
+  otpExpireAt  DateTime?
   refreshToken String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@map("user_credentials")
 }
 
 model Room {
-  id             String         @id @default(auto()) @map("_id")  @db.ObjectId
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
   floor          String
   roomNo         Int            @unique
   type           String
@@ -99,21 +99,22 @@ model SubCategory {
   @@map("sub_categories")
 }
 
-model ItemCodeSequence {
-  id             String         @id @default(auto()) @map("_id") @db.ObjectId
-  prefix         String         @unique
+model CodeSequence {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  type           CodeSequenceType
+  prefix         String           @unique
   nextNumber     Int?
-  approvalStatus ApprovalStatus @default(PENDING)
+  approvalStatus ApprovalStatus   @default(PENDING)
 
   inventoryItem InventoryItem?
 
-  @@map("item_code_sequences")
+  @@map("code_sequences")
 }
 
 model InventoryItem {
-  id         String           @id @default(auto()) @map("_id") @db.ObjectId
-  baseCodeId String           @unique @db.ObjectId
-  baseCode   ItemCodeSequence @relation(fields: [baseCodeId], references: [id])
+  id         String       @id @default(auto()) @map("_id") @db.ObjectId
+  baseCodeId String       @unique @db.ObjectId
+  baseCode   CodeSequence @relation(fields: [baseCodeId], references: [id])
 
   name           String  @unique
   description    String?
@@ -252,7 +253,7 @@ model OrderItem {
 }
 
 model ActionLog {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
 
@@ -275,7 +276,7 @@ model ActionLog {
 }
 
 model Notification {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
 
@@ -384,4 +385,9 @@ enum NotificationType {
   ACTION
   WARNING
   SUCCESS
+}
+
+enum CodeSequenceType {
+  REGISTRATION
+  INVENTORY_ITEM
 }
