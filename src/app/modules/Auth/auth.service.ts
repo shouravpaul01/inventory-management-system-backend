@@ -1,4 +1,4 @@
-import { User, UserStatus } from "@prisma/client";
+import { CodeSequenceType, User, UserStatus } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import * as crypto from "crypto";
 import httpStatus from "http-status";
@@ -12,7 +12,43 @@ import { AuthUtils } from "./auth.utils";
 
 import { generateOtp } from "../../../utils/generateOtp";
 import ApiPathError from "../../../errors/ApiPathError";
-
+import { createActionLogDB } from "../../../utils/createActionLogDB";
+const registerUser = async (userId:string,payload: User & { password: string }) => {
+  const existingUser = await prisma.user.findUnique({
+    where: { email: payload.email },
+  });
+  if (existingUser) {
+    throw new ApiPathError(
+      httpStatus.CONFLICT,
+      "email",
+      "The email already exists.",
+    );
+  }
+  const hashedPassword = await bcrypt.hash(payload.password, 12);
+  const codeSequence = await prisma.codeSequence.findFirst({
+    where: { type: CodeSequenceType.REGISTRATION },
+  });
+  if (!codeSequence) {
+    throw new ApiError(
+      httpStatus.NOT_FOUND,
+      "Registration code sequence is not found.",
+    );
+  }
+  const registrationId = `${codeSequence.prefix}${new Date().getFullYear()}${codeSequence.nextNumber}`;
+  const result = await prisma.user.create({
+    data: {
+      name: payload.name,
+      email: payload.email,
+      phone: payload.phone,
+      registrationId: registrationId,
+      credential: { create: { password: hashedPassword } },
+    },
+  });
+  await createActionLogDB({userId,action:"CREATE",entityType:"USER",entityId:result.id})
+  const {subject,html}= await AuthUtils.accountCreatedEmailTemplate({userId:result.registrationId,password:payload.password})
+  await emailSender(subject,result.email,html)
+  return result
+};
 const loginUser = async (payload: {
   email: string;
   password: string;
@@ -208,6 +244,7 @@ const changePassword = async (
 };
 
 export const AuthServices = {
+  registerUser,
   loginUser,
   changePassword,
   forgotPassword,

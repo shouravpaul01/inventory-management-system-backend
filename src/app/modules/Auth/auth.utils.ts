@@ -233,5 +233,94 @@ const createForgotPasswordTemplate = async (resetLink: string) => {
 </body>
 </html>`;
 };
+export function accountCreatedEmailTemplate({
+  loginLink=config.login_link!,
+  userId,
+  password,
+  appName = config.app_name!,
+  supportEmail = config.support_email,
+}: {
+  loginLink?: string;
+  userId: string;
+  password: string;
+  appName?: string;
+  supportEmail?: string;
+}) {
+  return {
+    subject: `Your ${appName} Account Has Been Created`,
 
-export const AuthUtils = {otpEmailTemplate,resetPasswordEmailTemplate, createForgotPasswordTemplate };
+    text: `
+Your account has been successfully created.
+
+To complete your account verification, please log in using the link below:
+${loginLink}
+
+Your login credentials:
+ID: ${userId}
+Password: ${password}
+
+For security reasons, please change your password after your first login.
+
+If you did not request this account, please ignore this email.
+
+— ${appName} Team
+Support: ${supportEmail}
+    `,
+
+    html: `
+      <div style="font-family: Arial, sans-serif; background:#f9fafb; padding:24px;">
+        <div style="max-width:520px; margin:auto; background:#ffffff; padding:24px; border-radius:8px;">
+          
+          <h2 style="color:#111827; margin-bottom:12px;">
+            Account Created Successfully
+          </h2>
+
+          <p style="color:#374151; font-size:14px;">
+            Your account has been successfully created. Please log in to complete
+            your account verification.
+          </p>
+
+          <div style="background:#f3f4f6; padding:16px; border-radius:6px; margin:16px 0;">
+            <p style="margin:0; color:#111827; font-size:14px;">
+              <strong>Your Login Credentials</strong>
+            </p>
+            <p style="margin:8px 0 0; font-size:14px; color:#374151;">
+              ID: <strong>${userId}</strong><br/>
+              Password: <strong>${password}</strong>
+            </p>
+          </div>
+
+          <div style="text-align:center; margin:24px 0;">
+            <a href="${loginLink}"
+               style="
+                 display:inline-block;
+                 padding:12px 24px;
+                 background-color:#2563eb;
+                 color:#ffffff;
+                 font-weight:600;
+                 border-radius:6px;
+                 text-decoration:none;
+                 font-size:14px;
+               ">
+              Login & Verify Account
+            </a>
+          </div>
+
+          <p style="color:#374151; font-size:14px;">
+            For security reasons, we strongly recommend changing your password
+            after your first login.
+          </p>
+
+          <hr style="margin:24px 0; border:none; border-top:1px solid #e5e7eb;" />
+
+          <p style="color:#6b7280; font-size:12px;">
+            © ${new Date().getFullYear()} ${appName}. All rights reserved.<br/>
+            Support: ${supportEmail}
+          </p>
+        </div>
+      </div>
+    `,
+  };
+}
+
+export const AuthUtils = {otpEmailTemplate,resetPasswordEmailTemplate, createForgotPasswordTemplate,accountCreatedEmailTemplate };
